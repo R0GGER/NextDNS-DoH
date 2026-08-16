@@ -1,4 +1,4 @@
-# NextDNS DoH
+# NextDNS DoH (DNS over HTTPS)
 
 A small Windows tray app that turns [NextDNS](https://nextdns.io) DNS-over-HTTPS [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png) for the active Wi-Fi and Ethernet adapters.
 
@@ -20,7 +20,8 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 
 ## Download
 
-[NextDNS-DoH-1.0.2.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.2/NextDNS-DoH-1.0.2.exe) — Windows installer. No Administrator rights needed to install; UAC is only requested when you toggle DNS.
+[NextDNS-DoH-1.0.2.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.2/NextDNS-DoH-1.0.2.exe)    
+No Administrator rights needed to install; UAC is only requested when you toggle DNS.
 
 ## Build outputs
 
