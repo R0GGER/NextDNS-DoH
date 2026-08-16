@@ -16,7 +16,11 @@ It lives in the notification area. Left-click the icon (or use **NextDNS on/off*
 
 On first run the app asks for your NextDNS configuration ID. That ID is the path segment in `https://dns.nextdns.io/[ID]`.
 
-**Requirements:** Windows 10/11 x64 with [.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48) (included on current Windows 11).
+**Requirements:** Windows 11 x64 with [.NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework/net48) (included on current Windows 11).
+
+## Download
+
+[NextDNS-DoH-1.0.2.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.2/NextDNS-DoH-1.0.2.exe) — Windows installer. No Administrator rights needed to install; UAC is only requested when you toggle DNS.
 
 ## Build outputs
 
