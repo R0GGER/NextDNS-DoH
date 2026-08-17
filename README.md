@@ -1,4 +1,4 @@
-# NextDNS DoH (DNS over HTTPS)
+# NextDNS DoH (DNS-over-HTTPS)
 
 A small Windows tray app that turns [NextDNS](https://nextdns.io) DNS-over-HTTPS [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png) for the active Wi-Fi and Ethernet adapters.
 
