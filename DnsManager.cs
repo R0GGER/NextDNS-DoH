@@ -19,8 +19,31 @@ internal static class DnsManager
     private const uint DnsServerPropertyVersion1 = 1;
     private const uint DnsServerDohProperty = 1;
 
-    public static string BuildTemplate(string configurationId) =>
-        $"https://dns.nextdns.io/{configurationId.Trim()}";
+    public static string BuildTemplate(string configurationId, string? deviceName = null)
+    {
+        var url = $"https://dns.nextdns.io/{configurationId.Trim()}";
+        var parts = new List<string>();
+        var id = DeviceInfo.GetId();
+        var name = DeviceInfo.ResolveName(deviceName);
+        var model = DeviceInfo.GetModel();
+
+        if (id.Length > 0)
+        {
+            parts.Add("device_id=" + Uri.EscapeDataString(id));
+        }
+
+        if (name.Length > 0)
+        {
+            parts.Add("device_name=" + Uri.EscapeDataString(name));
+        }
+
+        if (model.Length > 0)
+        {
+            parts.Add("device_model=" + Uri.EscapeDataString(model));
+        }
+
+        return parts.Count == 0 ? url : url + "?" + string.Join("&", parts);
+    }
 
     public static bool IsEnabled()
     {
@@ -38,10 +61,10 @@ internal static class DnsManager
         return false;
     }
 
-    public static void Enable(string configurationId)
+    public static void Enable(string configurationId, string? deviceName = null)
     {
         var id = NormalizeId(configurationId);
-        var template = BuildTemplate(id);
+        var template = BuildTemplate(id, deviceName);
         var ipv4 = new[] { Ipv4Primary, Ipv4Secondary };
         TryBuildIpv6(id, out var ipv6Primary, out var ipv6Secondary);
         string[]? ipv6 = ipv6Primary is null ? null : [ipv6Primary, ipv6Secondary!];
@@ -289,10 +312,11 @@ internal static class DnsManager
         foreach (var server in ipv4.Concat(ipv6 ?? []))
         {
             WriteWellKnownServer(server, template);
-            RunNetsh($"dns add encryption server={server} dohtemplate={template} autoupgrade=yes udpfallback=no");
-            RunNetsh($"dns set encryption server={server} dohtemplate={template} autoupgrade=yes udpfallback=no");
-            RunNetsh($"dnsclient add encryption server={server} dohtemplate={template} autoupgrade=yes udpfallback=no");
-            RunNetsh($"dnsclient set encryption server={server} dohtemplate={template} autoupgrade=yes udpfallback=no");
+            var quoted = QuoteNetshValue(template);
+            RunNetsh($"dns add encryption server={server} dohtemplate={quoted} autoupgrade=yes udpfallback=no");
+            RunNetsh($"dns set encryption server={server} dohtemplate={quoted} autoupgrade=yes udpfallback=no");
+            RunNetsh($"dnsclient add encryption server={server} dohtemplate={quoted} autoupgrade=yes udpfallback=no");
+            RunNetsh($"dnsclient set encryption server={server} dohtemplate={quoted} autoupgrade=yes udpfallback=no");
         }
     }
 
@@ -361,6 +385,9 @@ internal static class DnsManager
             RunNetsh($"interface ipv6 set dnsservers name={quoted} source=dhcp");
         }
     }
+
+    private static string QuoteNetshValue(string value) =>
+        "\"" + value.Replace("\"", "") + "\"";
 
     private static void RunNetsh(string arguments, bool throwOnError = false)
     {

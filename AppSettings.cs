@@ -3,7 +3,10 @@ namespace NextDnsDoh;
 internal sealed class AppSettings
 {
     public string ConfigurationId { get; set; } = "";
+    public string DeviceName { get; set; } = "";
     public bool Enabled { get; set; }
+    public bool ShowStatusBadge { get; set; } = true;
+    public bool MinimalistIcon { get; set; }
 
     public static string DirectoryPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "nextdns-doh");
@@ -24,7 +27,10 @@ internal sealed class AppSettings
 
             var json = File.ReadAllText(FilePath);
             settings.ConfigurationId = ReadJsonString(json, "ConfigurationId");
+            settings.DeviceName = ReadJsonString(json, "DeviceName");
             settings.Enabled = ReadJsonBool(json, "Enabled");
+            settings.ShowStatusBadge = ReadJsonBool(json, "ShowStatusBadge", defaultValue: true);
+            settings.MinimalistIcon = ReadJsonBool(json, "MinimalistIcon");
         }
         catch
         {
@@ -37,15 +43,20 @@ internal sealed class AppSettings
     public void Save()
     {
         Directory.CreateDirectory(DirectoryPath);
-        var id = ConfigurationId.Replace("\\", "\\\\").Replace("\"", "\\\"");
         File.WriteAllText(FilePath,
             "{" + Environment.NewLine +
-            "  \"ConfigurationId\": \"" + id + "\"," + Environment.NewLine +
-            "  \"Enabled\": " + (Enabled ? "true" : "false") + Environment.NewLine +
+            "  \"ConfigurationId\": \"" + EscapeJson(ConfigurationId) + "\"," + Environment.NewLine +
+            "  \"DeviceName\": \"" + EscapeJson(DeviceName) + "\"," + Environment.NewLine +
+            "  \"Enabled\": " + (Enabled ? "true" : "false") + "," + Environment.NewLine +
+            "  \"ShowStatusBadge\": " + (ShowStatusBadge ? "true" : "false") + "," + Environment.NewLine +
+            "  \"MinimalistIcon\": " + (MinimalistIcon ? "true" : "false") + Environment.NewLine +
             "}");
     }
 
     public bool HasConfigurationId => !string.IsNullOrWhiteSpace(ConfigurationId);
+
+    private static string EscapeJson(string value) =>
+        (value ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     private static string ReadJsonString(string json, string name)
     {
@@ -62,13 +73,13 @@ internal sealed class AppSettings
         return start < 0 || end < 0 ? "" : json.Substring(start + 1, end - start - 1);
     }
 
-    private static bool ReadJsonBool(string json, string name)
+    private static bool ReadJsonBool(string json, string name, bool defaultValue = false)
     {
         var key = "\"" + name + "\"";
         var index = json.IndexOf(key, StringComparison.OrdinalIgnoreCase);
         if (index < 0)
         {
-            return false;
+            return defaultValue;
         }
 
         var colon = json.IndexOf(':', index + key.Length);

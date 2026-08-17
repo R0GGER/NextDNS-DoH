@@ -11,20 +11,29 @@ internal sealed class TrayApp : ApplicationContext
     private readonly NotifyIcon _notifyIcon;
     private readonly ToolStripMenuItem _toggleItem;
     private readonly ToolStripMenuItem _startupItem;
-    private readonly Icon _onIcon;
-    private readonly Icon _offIcon;
+    private readonly SynchronizationContext _uiThread;
+    private Icon _onIcon;
+    private Icon _offIcon;
+    private bool _showBadge;
+    private bool _minimalist;
+    private bool _lightTaskbar;
 
     public TrayApp()
     {
-        _onIcon = TrayIcons.Create(enabled: true);
-        _offIcon = TrayIcons.Create(enabled: false);
+        _uiThread = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+        var initial = AppSettings.Load();
+        _showBadge = initial.ShowStatusBadge;
+        _minimalist = initial.MinimalistIcon;
+        _lightTaskbar = IsLightTaskbar();
+        _onIcon = TrayIcons.Create(enabled: true, _showBadge, _minimalist, _lightTaskbar);
+        _offIcon = TrayIcons.Create(enabled: false, _showBadge, _minimalist, _lightTaskbar);
 
         _toggleItem = new ToolStripMenuItem("NextDNS on/off", null, (_, _) => Toggle());
         _startupItem = new ToolStripMenuItem("Start with Windows", null, (_, _) => ToggleStartup());
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_toggleItem);
-        menu.Items.Add("Configuration ID…", null, (_, _) => EditConfigurationId());
+        menu.Items.Add("Configuration && ID", null, (_, _) => EditConfigurationId());
         menu.Items.Add(_startupItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem($"NextDNS DoH {GetDisplayVersion()}") { Enabled = false });
@@ -38,6 +47,7 @@ internal sealed class TrayApp : ApplicationContext
             Text = "NextDNS"
         };
         _notifyIcon.MouseClick += OnTrayClick;
+        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
 
         RefreshUi();
 
@@ -96,13 +106,23 @@ internal sealed class TrayApp : ApplicationContext
     private void EditConfigurationId(bool firstRun = false)
     {
         var settings = AppSettings.Load();
-        using var form = new SettingsForm(settings.ConfigurationId);
+        using var form = new SettingsForm(
+            settings.ConfigurationId,
+            settings.DeviceName,
+            settings.MinimalistIcon,
+            settings.ShowStatusBadge);
         if (form.ShowDialog() != DialogResult.OK)
         {
             return;
         }
 
-        settings.ConfigurationId = DnsManager.NormalizeId(form.ConfigurationId);
+        var id = DnsManager.NormalizeId(form.ConfigurationId);
+        var dnsChanged = !string.Equals(settings.ConfigurationId, id, StringComparison.Ordinal)
+            || !string.Equals(settings.DeviceName, form.DeviceName, StringComparison.Ordinal);
+        settings.ConfigurationId = id;
+        settings.DeviceName = form.DeviceName;
+        settings.MinimalistIcon = form.MinimalistIcon;
+        settings.ShowStatusBadge = form.ShowStatusBadge;
         settings.Save();
         RefreshUi();
 
@@ -118,6 +138,11 @@ internal sealed class TrayApp : ApplicationContext
                 Toggle();
             }
         }
+        else if (dnsChanged && (DnsManager.IsEnabled() || settings.Enabled))
+        {
+            Elevation.Apply(true);
+            RefreshUi();
+        }
     }
 
     private static bool EnsureConfigurationId(AppSettings settings)
@@ -127,13 +152,20 @@ internal sealed class TrayApp : ApplicationContext
             return true;
         }
 
-        using var form = new SettingsForm(settings.ConfigurationId);
+        using var form = new SettingsForm(
+            settings.ConfigurationId,
+            settings.DeviceName,
+            settings.MinimalistIcon,
+            settings.ShowStatusBadge);
         if (form.ShowDialog() != DialogResult.OK)
         {
             return false;
         }
 
         settings.ConfigurationId = DnsManager.NormalizeId(form.ConfigurationId);
+        settings.DeviceName = form.DeviceName;
+        settings.MinimalistIcon = form.MinimalistIcon;
+        settings.ShowStatusBadge = form.ShowStatusBadge;
         settings.Save();
         return true;
     }
@@ -144,15 +176,50 @@ internal sealed class TrayApp : ApplicationContext
         RefreshMenu();
     }
 
+    private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category is not (UserPreferenceCategory.General or UserPreferenceCategory.Color or UserPreferenceCategory.VisualStyle))
+        {
+            return;
+        }
+
+        _uiThread.Post(_ => RefreshUi(), null);
+    }
+
     private void RefreshUi()
     {
         var settings = AppSettings.Load();
         var enabled = DnsManager.IsEnabled() || settings.Enabled;
-        _notifyIcon.Icon = enabled ? _onIcon : _offIcon;
+        ApplyIcons(enabled, settings.ShowStatusBadge, settings.MinimalistIcon);
         _notifyIcon.Text = enabled
             ? $"NextDNS: on ({settings.ConfigurationId})"
             : "NextDNS: off";
         RefreshMenu();
+    }
+
+    private void ApplyIcons(bool enabled, bool showBadge, bool minimalist)
+    {
+        var lightTaskbar = IsLightTaskbar();
+        if (_showBadge == showBadge &&
+            _minimalist == minimalist &&
+            _lightTaskbar == lightTaskbar)
+        {
+            _notifyIcon.Icon = enabled ? _onIcon : _offIcon;
+            return;
+        }
+
+        var onIcon = TrayIcons.Create(enabled: true, showBadge, minimalist, lightTaskbar);
+        var offIcon = TrayIcons.Create(enabled: false, showBadge, minimalist, lightTaskbar);
+        var previousOn = _onIcon;
+        var previousOff = _offIcon;
+        _onIcon = onIcon;
+        _offIcon = offIcon;
+        _showBadge = showBadge;
+        _minimalist = minimalist;
+        _lightTaskbar = lightTaskbar;
+        _notifyIcon.Icon = enabled ? _onIcon : _offIcon;
+        previousOn.Dispose();
+        previousOff.Dispose();
     }
 
     private void RefreshMenu()
@@ -178,6 +245,19 @@ internal sealed class TrayApp : ApplicationContext
         return version is null ? "1.0.0" : version.ToString(3);
     }
 
+    private static bool IsLightTaskbar()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            return key?.GetValue("SystemUsesLightTheme") is int value && value == 1;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static bool IsStartWithWindowsEnabled()
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath);
@@ -200,6 +280,7 @@ internal sealed class TrayApp : ApplicationContext
 
     protected override void ExitThreadCore()
     {
+        SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
         _onIcon.Dispose();

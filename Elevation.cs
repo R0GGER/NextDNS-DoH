@@ -40,7 +40,7 @@ internal static class Elevation
                     return 2;
                 }
 
-                DnsManager.Enable(settings.ConfigurationId);
+                DnsManager.Enable(settings.ConfigurationId, settings.DeviceName);
             }
             else
             {

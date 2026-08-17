@@ -9,10 +9,11 @@ It lives in the notification area. Left-click the icon (or use **NextDNS on/off*
 ## What it does
 
 - Sets NextDNS as the DNS-over-HTTPS resolver using your configuration ID from [my.nextdns.io](https://my.nextdns.io)
+- Identifies this PC in NextDNS logs with a device ID, name, and model (same idea as the [NextDNS CLI](https://github.com/nextdns/nextdns))
 - Applies the change to active Ethernet and Wi-Fi adapters (not VPN, Bluetooth, or Hyper-V virtual switches)
 - Restores DHCP DNS when you turn it off
 - Can start with Windows
-- Stores your configuration ID in `%AppData%\nextdns-doh\settings.json`
+- Stores your configuration ID and device name in `%AppData%\nextdns-doh\settings.json`
 
 On first run the app asks for your NextDNS configuration ID. That ID is the path segment in `https://dns.nextdns.io/[ID]`.
 
@@ -20,8 +21,12 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 
 ## Download
 
+<<<<<<< Updated upstream
 [NextDNS-DoH-1.0.2.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.2/NextDNS-DoH-1.0.2.exe)    
 No Administrator rights needed to install; UAC is only requested when you toggle DNS.
+=======
+[NextDNS-DoH-1.0.3.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.3/NextDNS-DoH-1.0.3.exe) — Windows installer. No Administrator rights needed to install; UAC is only requested when you toggle DNS.
+>>>>>>> Stashed changes
 
 ## Build outputs
 
@@ -29,10 +34,10 @@ No Administrator rights needed to install; UAC is only requested when you toggle
 | File                         | What it is                                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `publish/nextdns-doh.exe`    | Portable app. Run it as-is; no installer.                                                                        |
-| `dist/NextDNS-DoH-1.0.2.exe` | Setup that copies the app to `%LocalAppData%\Programs\NextDNS DoH`, adds a Start Menu shortcut, and launches it. |
+| `dist/NextDNS-DoH-1.0.3.exe` | Setup that copies the app to `%LocalAppData%\Programs\NextDNS DoH`, adds a Start Menu shortcut, and launches it. |
 
 
-The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.2`).
+The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.3`).
 
 ## Prerequisites
 
@@ -79,7 +84,7 @@ Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu
 ## Usage
 
 1. Run `nextdns-doh.exe` or the installer.
-2. Enter your NextDNS configuration ID.
+2. Enter your NextDNS configuration ID and optionally a device name (defaults to this PC’s name).
 3. Optionally enable NextDNS immediately.
-4. Left-click the tray icon to toggle [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png), or [right-click](/screenshots/config.png) for **Configuration ID…**, **Start with Windows**, and **Exit**.
+4. Left-click the tray icon to toggle [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png), or [right-click](/screenshots/config.png) for **Configuration & ID**, **Start with Windows**, and **Exit**.
 
