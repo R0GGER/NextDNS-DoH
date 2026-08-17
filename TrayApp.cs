@@ -33,7 +33,7 @@ internal sealed class TrayApp : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_toggleItem);
-        menu.Items.Add("Configuration && ID", null, (_, _) => EditConfigurationId());
+        menu.Items.Add("Settings", null, (_, _) => EditConfigurationId());
         menu.Items.Add(_startupItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem($"NextDNS DoH {GetDisplayVersion()}") { Enabled = false });

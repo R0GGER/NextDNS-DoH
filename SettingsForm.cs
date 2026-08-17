@@ -16,7 +16,7 @@ internal sealed class SettingsForm : Form
 
     public SettingsForm(string currentId, string currentDeviceName, bool minimalistIcon, bool showStatusBadge)
     {
-        Text = "NextDNS DoH configuration";
+        Text = "NextDNS DoH - Settings";
         FormBorderStyle = FormBorderStyle.FixedSingle;
         StartPosition = FormStartPosition.CenterScreen;
         MinimizeBox = false;
