@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Win32;
 
@@ -33,8 +34,9 @@ internal sealed class TrayApp : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_toggleItem);
-        menu.Items.Add("Settings", null, (_, _) => EditConfigurationId());
         menu.Items.Add(_startupItem);
+        menu.Items.Add("Settings", null, (_, _) => EditConfigurationId());
+        menu.Items.Add("My NextDNS", null, (_, _) => OpenDashboard());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem($"NextDNS DoH {GetDisplayVersion()}") { Enabled = false });
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
@@ -168,6 +170,21 @@ internal sealed class TrayApp : ApplicationContext
         settings.ShowStatusBadge = form.ShowStatusBadge;
         settings.Save();
         return true;
+    }
+
+    private void OpenDashboard()
+    {
+        var settings = AppSettings.Load();
+        if (!EnsureConfigurationId(settings))
+        {
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = $"https://my.nextdns.io/{settings.ConfigurationId}/setup",
+            UseShellExecute = true
+        });
     }
 
     private void ToggleStartup()
