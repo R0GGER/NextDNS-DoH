@@ -23,6 +23,13 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 
 [NextDNS-DoH-1.0.5.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.5/NextDNS-DoH-1.0.5.exe) — Windows installer. No Administrator rights needed to install; UAC is only requested when you toggle DNS.
 
+## Usage
+
+1. Run `nextdns-doh.exe` or the installer.
+2. Enter your NextDNS configuration ID and optionally a device name (defaults to this PC’s name).
+3. Optionally enable NextDNS immediately.
+4. Left-click the tray icon to toggle [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png), or [right-click](/screenshots/config.png) for **Settings**, **Start with Windows**, and **Exit**.
+
 ## Build outputs
 
 
@@ -76,6 +83,7 @@ Double-click the setup (or run it silently with `/VERYSILENT`). It does not requ
 
 Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu folder. Uninstall also removes the “Start with Windows” registry value.
 
+<<<<<<< HEAD
 ## Usage
 
 1. Run `nextdns-doh.exe` or the installer.
@@ -83,3 +91,5 @@ Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu
 3. Optionally enable NextDNS immediately.
 4. Left-click the tray icon to toggle [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png), or [right-click](/screenshots/config.png) for **Start with Windows**, **Settings**, **My NextDNS**, and **Exit**.
 
+=======
+>>>>>>> 360e53f94ecf5dff7964a071b3ce6ec82c386e7c
