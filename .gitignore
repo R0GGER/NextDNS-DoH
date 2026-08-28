@@ -6,3 +6,4 @@ dist/
 tools/
 *.user
 *.suo
+changelog.md
