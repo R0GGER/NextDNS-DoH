@@ -30,6 +30,23 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 3. Optionally enable NextDNS immediately.
 4. Left-click the tray icon to toggle [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png), or [right-click](/screenshots/config.png) for **Settings**, **Start with Windows**, and **Exit**.
 
+## Troubleshooting
+
+### Firefox cannot open some sites on an IPv4-only WAN
+
+With NextDNS DoH on, Firefox may show **Unable to connect** for some sites (often Cloudflare) even though the domain is not blocked in the [NextDNS logs](https://my.nextdns.io). Turning NextDNS off and restarting Firefox makes those sites work again.
+
+On an IPv4-only WAN, Windows DoH still returns HTTPS records with IPv6 hints. Firefox then tries those addresses first and fails to connect.
+
+In Firefox, open `about:config` and set:
+
+| Preference | Value |
+| --- | --- |
+| `network.dns.native_https_query` | `false` |
+| `network.dns.disableIPv6` | `true` |
+
+Restart Firefox after changing these values.
+
 ## Uninstall
 
 Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu folder. Uninstall also removes the “Start with Windows” registry value.
