@@ -92,7 +92,7 @@ internal sealed class TrayApp : ApplicationContext
         if (!ok)
         {
             var error = Elevation.ReadLastError();
-            var message = "Changing DNS was cancelled or failed. Administrator access is required.";
+            var message = "Changing DNS did not complete. It was cancelled, or the elevated NextDNS DoH task could not run.";
             if (!string.IsNullOrWhiteSpace(error))
             {
                 var lines = error.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
