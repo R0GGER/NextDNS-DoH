@@ -6,6 +6,19 @@ It lives in the notification area. Left-click the icon (or use **NextDNS on/off*
 
 ![](/screenshots/config.png)
 
+## Contents
+
+- [What it does](#what-it-does)
+- [Download](#download)
+- [Install & Run](#install--run)
+- [Troubleshooting](#troubleshooting)
+  - [Some sites do not open when NextDNS DoH is on](#some-sites-do-not-open-when-nextdns-doh-is-on)
+- [Uninstall](#uninstall)
+- [Build outputs](#build-outputs)
+- [Prerequisites](#prerequisites)
+- [Build the portable app](#build-the-portable-app)
+- [Build the installer](#build-the-installer)
+
 ## What it does
 
 - Sets NextDNS as the DNS-over-HTTPS resolver using your configuration ID from [my.nextdns.io](https://my.nextdns.io)
