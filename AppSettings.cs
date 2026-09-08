@@ -15,6 +15,8 @@ internal sealed class AppSettings
 
     public static string LastErrorPath => Path.Combine(DirectoryPath, "last-error.txt");
 
+    public static string ApplyResultPath => Path.Combine(DirectoryPath, "apply-result.txt");
+
     public static AppSettings Load()
     {
         var settings = new AppSettings();
