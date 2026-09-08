@@ -38,20 +38,20 @@ Two situations still fall back to a UAC prompt per change:
 
 ## Troubleshooting
 
-### Firefox cannot open some sites on an IPv4-only WAN
+### Some sites do not open when NextDNS DoH is on
 
-With NextDNS DoH on, Firefox may show **Unable to connect** for some sites (often Cloudflare) even though the domain is not blocked in the [NextDNS logs](https://my.nextdns.io). Turning NextDNS off and restarting Firefox makes those sites work again.
+**Symptom:** with NextDNS DoH on, a browser shows **Unable to connect** for some sites (often Cloudflare-hosted), even though the [NextDNS logs](https://my.nextdns.io) show the domain was not blocked. Turning NextDNS off makes those sites work again.
 
-On an IPv4-only WAN, Windows DoH still returns HTTPS records with IPv6 hints. Firefox then tries those addresses first and fails to connect.
+**Cause:** your internet connection has no working IPv6, but DoH still returns IPv6 addresses for those sites. The browser tries IPv6 first and the connection times out instead of falling back to IPv4.
 
-In Firefox, open `about:config` and set:
+**Fix 1 — turn off IPv6 on the network adapter (recommended).** This fixes it for every browser and app at once. Open **Control Panel → Network and Sharing Center → Change adapter settings**, right-click your Wi-Fi or Ethernet adapter, choose **Properties**, clear the checkbox for **Internet Protocol Version 6 (TCP/IPv6)**, and click **OK**. Do this for each adapter you actually use. Only do this if your provider does not give you IPv6; if it does, leave it enabled.
+
+**Fix 2 — Firefox only.** If you would rather not change the adapter, open `about:config` in Firefox and set both preferences below, then restart Firefox. This only affects Firefox; other browsers keep the problem.
 
 | Preference | Value |
 | --- | --- |
 | `network.dns.native_https_query` | `false` |
 | `network.dns.disableIPv6` | `true` |
-
-Restart Firefox after changing these values.
 
 ## Uninstall
 
