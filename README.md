@@ -44,9 +44,11 @@ Two situations still fall back to a UAC prompt per change:
 
 **Cause:** your internet connection has no working IPv6, but DoH still returns IPv6 addresses for those sites. The browser tries IPv6 first and the connection times out instead of falling back to IPv4.
 
-**Fix 1: Turn off IPv6 on the network adapter (recommended).** This fixes it for every browser and app at once. Open **Control Panel → Network and Sharing Center → Change adapter settings**, right-click your Wi-Fi or Ethernet adapter, choose **Properties**, clear the checkbox for **Internet Protocol Version 6 (TCP/IPv6)**, and click **OK**. Do this for each adapter you actually use. Only do this if your provider does not give you IPv6; if it does, leave it enabled.
+**Turn off IPv6 on the network adapter (recommended).**    
+This fixes it for every browser and app at once. Open **Control Panel → Network and Sharing Center → Change adapter settings**, right-click your Wi-Fi or Ethernet adapter, choose **Properties**, clear the checkbox for **Internet Protocol Version 6 (TCP/IPv6)**, and click **OK**. Do this for each adapter you actually use. Only do this if your provider does not give you IPv6; if it does, leave it enabled.
 
-**Fix 2: Firefox only.** Open `about:config` in Firefox and set both preferences below, then restart Firefox. This only affects Firefox; other browsers keep the problem.
+**Firefox**    
+Open `about:config` in Firefox and set both preferences below, then restart Firefox.
 
 | Preference | Value |
 | --- | --- |
