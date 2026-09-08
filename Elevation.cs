@@ -24,10 +24,22 @@ internal static class Elevation
             return ApplyInProcess(enable) == 0;
         }
 
+        if (ElevatedTask.TryApply(enable, out var succeeded))
+        {
+            return succeeded;
+        }
+
         return RunElevated(enable ? "--apply on" : "--apply off");
     }
 
     public static int ApplyInProcess(bool enable)
+    {
+        var result = RunApply(enable);
+        WriteResult(result);
+        return result;
+    }
+
+    private static int RunApply(bool enable)
     {
         try
         {
@@ -107,10 +119,26 @@ internal static class Elevation
         }
     }
 
-    private static void WriteError(string message)
+    internal static void WriteError(string message)
     {
         Directory.CreateDirectory(AppSettings.DirectoryPath);
         File.WriteAllText(AppSettings.LastErrorPath, message);
+    }
+
+    /// <summary>
+    /// Lets the tray app pick up the outcome of an apply that ran in the scheduled task.
+    /// </summary>
+    private static void WriteResult(int result)
+    {
+        try
+        {
+            Directory.CreateDirectory(AppSettings.DirectoryPath);
+            File.WriteAllText(AppSettings.ApplyResultPath, result.ToString());
+        }
+        catch
+        {
+            // The caller falls back to a timeout.
+        }
     }
 
     private static void ClearError()
