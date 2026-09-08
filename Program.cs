@@ -14,6 +14,18 @@ internal static class Program
             return Elevation.ApplyInProcess(enable);
         }
 
+        if (args.Length >= 1 &&
+            string.Equals(args[0], "--register-task", StringComparison.OrdinalIgnoreCase))
+        {
+            return ElevatedTask.Register(args.Length >= 2 ? args[1] : null) ? 0 : 1;
+        }
+
+        if (args.Length >= 1 &&
+            string.Equals(args[0], "--unregister-task", StringComparison.OrdinalIgnoreCase))
+        {
+            return ElevatedTask.Unregister() ? 0 : 1;
+        }
+
         using var mutex = new Mutex(true, MutexName, out var created);
         if (!created)
         {
