@@ -11,6 +11,7 @@ It lives in the notification area. Left-click the icon (or use **NextDNS on/off*
 - [What it does](#what-it-does)
 - [Download](#download)
 - [Install & Run](#install--run)
+  - [Updates](#updates)
 - [Troubleshooting](#troubleshooting)
 - [Uninstall](#uninstall)
 - [Build outputs](#build-outputs)
@@ -25,6 +26,7 @@ It lives in the notification area. Left-click the icon (or use **NextDNS on/off*
 - Applies the change to active Ethernet and Wi-Fi adapters (not VPN, Bluetooth, or Hyper-V virtual switches)
 - Restores DHCP DNS when you turn it off
 - Can start with Windows
+- Checks GitHub for a newer release and can install it from the tray menu
 - Stores your configuration ID and device name in `%AppData%\nextdns-doh\settings.json`
 - Toggles without a UAC prompt through the **NextDNS DoH\Apply On** and **Apply Off** scheduled tasks that the installer registers
 
@@ -34,7 +36,7 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 
 ## Download
 
-[NextDNS-DoH-1.0.6.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.6/NextDNS-DoH-1.0.6.exe) — Windows installer. It asks for Administrator rights once and installs to `%ProgramFiles%\NextDNS DoH`. After that, turning NextDNS on or off no longer prompts.
+[NextDNS-DoH-1.0.7.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.7/NextDNS-DoH-1.0.7.exe) — Windows installer. It asks for Administrator rights once and installs to `%ProgramFiles%\NextDNS DoH`. After that, turning NextDNS on or off no longer prompts.
 
 ## Install & Run
 
@@ -47,6 +49,10 @@ Two situations still fall back to a UAC prompt per change:
 
 - Running `nextdns-doh.exe` portable, without the installer. There are no scheduled tasks then.
 - Using the app from a second Windows account. The tasks are registered for the account that ran the installer.
+
+### Updates
+
+The app asks GitHub for the latest release when it starts and once every 24 hours after that. When a newer version is out, the bottom menu item changes from **NextDNS DoH 1.0.7** to **NextDNS DoH 1.0.7 - update to 1.0.8** and becomes clickable. It opens a window with the release notes and an **Update now** button that downloads the installer and runs it silently; Windows asks for Administrator rights once, and setup replaces the app and starts the new version. Failed checks are ignored, so the menu item simply stays as it was.
 
 ## Troubleshooting
 
@@ -77,10 +83,10 @@ Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu
 | File                         | What it is                                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `publish/nextdns-doh.exe`    | Portable app. Run it as-is; no installer.                                                                        |
-| `dist/NextDNS-DoH-1.0.6.exe` | Setup that copies the app to `%ProgramFiles%\NextDNS DoH`, registers the scheduled tasks, adds a Start Menu shortcut, and launches it. |
+| `dist/NextDNS-DoH-1.0.7.exe` | Setup that copies the app to `%ProgramFiles%\NextDNS DoH`, registers the scheduled tasks, adds a Start Menu shortcut, and launches it. |
 
 
-The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.6`).
+The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.7`).
 
 ## Prerequisites
 
