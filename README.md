@@ -12,7 +12,6 @@ It lives in the notification area. Left-click the icon (or use **NextDNS on/off*
 - [Download](#download)
 - [Install & Run](#install--run)
 - [Troubleshooting](#troubleshooting)
-  - [Some sites do not open when NextDNS DoH is on](#some-sites-do-not-open-when-nextdns-doh-is-on)
 - [Uninstall](#uninstall)
 - [Build outputs](#build-outputs)
 - [Prerequisites](#prerequisites)
