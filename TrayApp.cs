@@ -23,8 +23,10 @@ internal sealed class TrayApp : ApplicationContext
     private bool _minimalist;
     private bool _lightTaskbar;
     private UpdateInfo? _availableUpdate;
+    private UpdateCheckStatus? _lastCheckStatus;
     private Font? _versionItemFont;
     private bool _checkRunning;
+    private bool _keepMenuOpen;
     private bool _updateFormOpen;
 
     public TrayApp()
@@ -50,6 +52,7 @@ internal sealed class TrayApp : ApplicationContext
         menu.Items.Add(_versionItem);
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
         menu.Opening += (_, _) => RefreshMenu();
+        menu.Closing += OnMenuClosing;
 
         _notifyIcon = new NotifyIcon
         {
@@ -209,23 +212,38 @@ internal sealed class TrayApp : ApplicationContext
             return;
         }
 
+        _keepMenuOpen = true;
         CheckForUpdates(manual: true);
+    }
+
+    private void OnMenuClosing(object? sender, ToolStripDropDownClosingEventArgs e)
+    {
+        if (!_keepMenuOpen)
+        {
+            return;
+        }
+
+        if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked)
+        {
+            e.Cancel = true;
+        }
+
+        _keepMenuOpen = false;
     }
 
     private void CheckForUpdates(bool manual = false)
     {
+        if (manual)
+        {
+            ShowCheckingVersionItem();
+        }
+
         if (_checkRunning)
         {
             return;
         }
 
         _checkRunning = true;
-        if (manual)
-        {
-            _versionItem.Text = "Checking for updates...";
-            _versionItem.Enabled = false;
-        }
-
         var installed = GetDisplayVersion();
         _ = Task.Run(() =>
         {
@@ -239,36 +257,22 @@ internal sealed class TrayApp : ApplicationContext
         _checkRunning = false;
         if (result.Status == UpdateCheckStatus.UpdateAvailable)
         {
+            _lastCheckStatus = result.Status;
             ShowUpdateAvailable(result.Update!);
-            if (manual)
-            {
-                ShowUpdateWindow(result.Update!);
-            }
-
-            return;
-        }
-
-        RefreshVersionItem();
-        if (!manual)
-        {
             return;
         }
 
         if (result.Status == UpdateCheckStatus.UpToDate)
         {
-            MessageBox.Show(
-                $"NextDNS DoH {GetDisplayVersion()} is the latest version.",
-                "NextDNS DoH",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            return;
+            ClearAvailableUpdate();
+            _lastCheckStatus = result.Status;
+        }
+        else if (manual && _availableUpdate is null)
+        {
+            _lastCheckStatus = UpdateCheckStatus.Failed;
         }
 
-        MessageBox.Show(
-            "Could not check for updates. GitHub could not be reached, or it has no installer for a newer version yet.",
-            "NextDNS DoH",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Warning);
+        RefreshVersionItem();
     }
 
     private void ShowUpdateAvailable(UpdateInfo update)
@@ -276,21 +280,77 @@ internal sealed class TrayApp : ApplicationContext
         if (_availableUpdate is null || update.Version > _availableUpdate.Version)
         {
             _availableUpdate = update;
-            var bold = new Font(_versionItem.Font, FontStyle.Bold);
-            var previous = _versionItemFont;
-            _versionItem.Font = bold;
-            _versionItemFont = bold;
-            previous?.Dispose();
+            SetVersionItemBold(true);
         }
 
         RefreshVersionItem();
     }
 
+    private void ClearAvailableUpdate()
+    {
+        _availableUpdate = null;
+        SetVersionItemBold(false);
+    }
+
+    private void SetVersionItemBold(bool bold)
+    {
+        if (bold)
+        {
+            if (_versionItem.Font.Bold)
+            {
+                return;
+            }
+
+            var next = new Font(_versionItem.Font, FontStyle.Bold);
+            var previous = _versionItemFont;
+            _versionItem.Font = next;
+            _versionItemFont = next;
+            previous?.Dispose();
+            return;
+        }
+
+        if (_versionItemFont is null)
+        {
+            return;
+        }
+
+        _versionItem.Font = null;
+        _versionItemFont.Dispose();
+        _versionItemFont = null;
+    }
+
+    private void ShowCheckingVersionItem()
+    {
+        _versionItem.Text = "Checking for updates...";
+        _versionItem.Enabled = false;
+    }
+
     private void RefreshVersionItem()
     {
-        _versionItem.Text = _availableUpdate is null
-            ? $"NextDNS DoH {GetDisplayVersion()}"
-            : $"NextDNS DoH {GetDisplayVersion()} - update to {_availableUpdate.DisplayVersion}";
+        if (_checkRunning)
+        {
+            ShowCheckingVersionItem();
+            return;
+        }
+
+        var version = GetDisplayVersion();
+        if (_availableUpdate is not null)
+        {
+            _versionItem.Text = $"NextDNS DoH {version} - update to {_availableUpdate.DisplayVersion}";
+        }
+        else if (_lastCheckStatus == UpdateCheckStatus.UpToDate)
+        {
+            _versionItem.Text = $"NextDNS DoH {version} - latest";
+        }
+        else if (_lastCheckStatus == UpdateCheckStatus.Failed)
+        {
+            _versionItem.Text = $"NextDNS DoH {version} - could not check";
+        }
+        else
+        {
+            _versionItem.Text = $"NextDNS DoH {version}";
+        }
+
         _versionItem.Enabled = true;
     }
 
@@ -372,6 +432,7 @@ internal sealed class TrayApp : ApplicationContext
         _toggleItem.Checked = enabled;
         _toggleItem.Text = enabled ? "NextDNS: on" : "NextDNS: off";
         _startupItem.Checked = IsStartWithWindowsEnabled();
+        RefreshVersionItem();
     }
 
     private static string GetDisplayVersion()
