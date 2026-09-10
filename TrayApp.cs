@@ -9,15 +9,22 @@ internal sealed class TrayApp : ApplicationContext
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string RunValueName = "NextDNS-DoH";
 
+    private const int UpdateCheckIntervalMs = 24 * 60 * 60 * 1000;
+
     private readonly NotifyIcon _notifyIcon;
     private readonly ToolStripMenuItem _toggleItem;
     private readonly ToolStripMenuItem _startupItem;
+    private readonly ToolStripMenuItem _versionItem;
     private readonly SynchronizationContext _uiThread;
+    private readonly System.Windows.Forms.Timer _updateTimer;
     private Icon _onIcon;
     private Icon _offIcon;
     private bool _showBadge;
     private bool _minimalist;
     private bool _lightTaskbar;
+    private UpdateInfo? _availableUpdate;
+    private Font? _versionItemFont;
+    private bool _updateFormOpen;
 
     public TrayApp()
     {
@@ -31,6 +38,10 @@ internal sealed class TrayApp : ApplicationContext
 
         _toggleItem = new ToolStripMenuItem("NextDNS on/off", null, (_, _) => Toggle());
         _startupItem = new ToolStripMenuItem("Start with Windows", null, (_, _) => ToggleStartup());
+        _versionItem = new ToolStripMenuItem($"NextDNS DoH {GetDisplayVersion()}", null, (_, _) => ShowUpdate())
+        {
+            Enabled = false
+        };
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_toggleItem);
@@ -38,7 +49,7 @@ internal sealed class TrayApp : ApplicationContext
         menu.Items.Add("Settings", null, (_, _) => EditConfigurationId());
         menu.Items.Add("My NextDNS", null, (_, _) => OpenDashboard());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(new ToolStripMenuItem($"NextDNS DoH {GetDisplayVersion()}") { Enabled = false });
+        menu.Items.Add(_versionItem);
         menu.Items.Add("Exit", null, (_, _) => ExitThread());
         menu.Opening += (_, _) => RefreshMenu();
 
@@ -52,6 +63,11 @@ internal sealed class TrayApp : ApplicationContext
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
 
         RefreshUi();
+
+        _updateTimer = new System.Windows.Forms.Timer { Interval = UpdateCheckIntervalMs };
+        _updateTimer.Tick += (_, _) => CheckForUpdates();
+        _updateTimer.Start();
+        CheckForUpdates();
 
         var settings = AppSettings.Load();
         if (!settings.HasConfigurationId)
@@ -187,6 +203,58 @@ internal sealed class TrayApp : ApplicationContext
         });
     }
 
+    private void CheckForUpdates()
+    {
+        var installed = GetDisplayVersion();
+        _ = Task.Run(() =>
+        {
+            var update = UpdateChecker.Check(installed);
+            if (update is null)
+            {
+                return;
+            }
+
+            _uiThread.Post(_ => ShowUpdateAvailable(update), null);
+        });
+    }
+
+    private void ShowUpdateAvailable(UpdateInfo update)
+    {
+        if (_availableUpdate is not null && _availableUpdate.Version >= update.Version)
+        {
+            return;
+        }
+
+        _availableUpdate = update;
+        _versionItem.Text = $"NextDNS DoH {GetDisplayVersion()} - update to {update.DisplayVersion}";
+        var bold = new Font(_versionItem.Font, FontStyle.Bold);
+        var previous = _versionItemFont;
+        _versionItem.Font = bold;
+        _versionItemFont = bold;
+        _versionItem.Enabled = true;
+        previous?.Dispose();
+    }
+
+    private void ShowUpdate()
+    {
+        var update = _availableUpdate;
+        if (update is null || _updateFormOpen)
+        {
+            return;
+        }
+
+        _updateFormOpen = true;
+        try
+        {
+            using var form = new UpdateForm(GetDisplayVersion(), update);
+            form.ShowDialog();
+        }
+        finally
+        {
+            _updateFormOpen = false;
+        }
+    }
+
     private void ToggleStartup()
     {
         SetStartWithWindows(!IsStartWithWindowsEnabled());
@@ -298,10 +366,13 @@ internal sealed class TrayApp : ApplicationContext
     protected override void ExitThreadCore()
     {
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        _updateTimer.Stop();
+        _updateTimer.Dispose();
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
         _onIcon.Dispose();
         _offIcon.Dispose();
+        _versionItemFont?.Dispose();
         base.ExitThreadCore();
     }
 }
