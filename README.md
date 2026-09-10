@@ -36,7 +36,8 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 
 ## Download
 
-[NextDNS-DoH-1.0.8.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.8/NextDNS-DoH-1.0.8.exe) — Windows installer. It asks for Administrator rights once and installs to `%ProgramFiles%\NextDNS DoH`. After that, turning NextDNS on or off no longer prompts.
+Windows installer: [NextDNS-DoH-1.0.8.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.8/NextDNS-DoH-1.0.8.exe)     
+It asks for Administrator rights once and installs to `%ProgramFiles%\NextDNS DoH`. After that, turning NextDNS on or off no longer prompts.
 
 ## Install & Run
 
