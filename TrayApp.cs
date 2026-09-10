@@ -24,6 +24,7 @@ internal sealed class TrayApp : ApplicationContext
     private bool _lightTaskbar;
     private UpdateInfo? _availableUpdate;
     private Font? _versionItemFont;
+    private bool _checkRunning;
     private bool _updateFormOpen;
 
     public TrayApp()
@@ -38,10 +39,7 @@ internal sealed class TrayApp : ApplicationContext
 
         _toggleItem = new ToolStripMenuItem("NextDNS on/off", null, (_, _) => Toggle());
         _startupItem = new ToolStripMenuItem("Start with Windows", null, (_, _) => ToggleStartup());
-        _versionItem = new ToolStripMenuItem($"NextDNS DoH {GetDisplayVersion()}", null, (_, _) => ShowUpdate())
-        {
-            Enabled = false
-        };
+        _versionItem = new ToolStripMenuItem($"NextDNS DoH {GetDisplayVersion()}", null, (_, _) => OnVersionClicked());
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_toggleItem);
@@ -203,42 +201,102 @@ internal sealed class TrayApp : ApplicationContext
         });
     }
 
-    private void CheckForUpdates()
+    private void OnVersionClicked()
     {
-        var installed = GetDisplayVersion();
-        _ = Task.Run(() =>
+        if (_availableUpdate is not null)
         {
-            var update = UpdateChecker.Check(installed);
-            if (update is null)
-            {
-                return;
-            }
+            ShowUpdateWindow(_availableUpdate);
+            return;
+        }
 
-            _uiThread.Post(_ => ShowUpdateAvailable(update), null);
-        });
+        CheckForUpdates(manual: true);
     }
 
-    private void ShowUpdateAvailable(UpdateInfo update)
+    private void CheckForUpdates(bool manual = false)
     {
-        if (_availableUpdate is not null && _availableUpdate.Version >= update.Version)
+        if (_checkRunning)
         {
             return;
         }
 
-        _availableUpdate = update;
-        _versionItem.Text = $"NextDNS DoH {GetDisplayVersion()} - update to {update.DisplayVersion}";
-        var bold = new Font(_versionItem.Font, FontStyle.Bold);
-        var previous = _versionItemFont;
-        _versionItem.Font = bold;
-        _versionItemFont = bold;
-        _versionItem.Enabled = true;
-        previous?.Dispose();
+        _checkRunning = true;
+        if (manual)
+        {
+            _versionItem.Text = "Checking for updates...";
+            _versionItem.Enabled = false;
+        }
+
+        var installed = GetDisplayVersion();
+        _ = Task.Run(() =>
+        {
+            var result = UpdateChecker.Check(installed);
+            _uiThread.Post(_ => OnCheckCompleted(result, manual), null);
+        });
     }
 
-    private void ShowUpdate()
+    private void OnCheckCompleted(UpdateCheckResult result, bool manual)
     {
-        var update = _availableUpdate;
-        if (update is null || _updateFormOpen)
+        _checkRunning = false;
+        if (result.Status == UpdateCheckStatus.UpdateAvailable)
+        {
+            ShowUpdateAvailable(result.Update!);
+            if (manual)
+            {
+                ShowUpdateWindow(result.Update!);
+            }
+
+            return;
+        }
+
+        RefreshVersionItem();
+        if (!manual)
+        {
+            return;
+        }
+
+        if (result.Status == UpdateCheckStatus.UpToDate)
+        {
+            MessageBox.Show(
+                $"NextDNS DoH {GetDisplayVersion()} is the latest version.",
+                "NextDNS DoH",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            return;
+        }
+
+        MessageBox.Show(
+            "Could not check for updates. GitHub could not be reached, or it has no installer for a newer version yet.",
+            "NextDNS DoH",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Warning);
+    }
+
+    private void ShowUpdateAvailable(UpdateInfo update)
+    {
+        if (_availableUpdate is null || update.Version > _availableUpdate.Version)
+        {
+            _availableUpdate = update;
+            var bold = new Font(_versionItem.Font, FontStyle.Bold);
+            var previous = _versionItemFont;
+            _versionItem.Font = bold;
+            _versionItemFont = bold;
+            previous?.Dispose();
+        }
+
+        RefreshVersionItem();
+    }
+
+    private void RefreshVersionItem()
+    {
+        _versionItem.Text = _availableUpdate is null
+            ? $"NextDNS DoH {GetDisplayVersion()}"
+            : $"NextDNS DoH {GetDisplayVersion()} - update to {_availableUpdate.DisplayVersion}";
+        _versionItem.Enabled = true;
+    }
+
+    private void ShowUpdateWindow(UpdateInfo update)
+    {
+        if (_updateFormOpen)
         {
             return;
         }

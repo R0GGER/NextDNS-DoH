@@ -24,6 +24,31 @@ internal sealed class UpdateInfo
     public long Size { get; }
 }
 
+internal enum UpdateCheckStatus
+{
+    UpToDate,
+    UpdateAvailable,
+    Failed
+}
+
+internal sealed class UpdateCheckResult
+{
+    private UpdateCheckResult(UpdateCheckStatus status, UpdateInfo? update)
+    {
+        Status = status;
+        Update = update;
+    }
+
+    public UpdateCheckStatus Status { get; }
+    public UpdateInfo? Update { get; }
+
+    public static readonly UpdateCheckResult UpToDate = new(UpdateCheckStatus.UpToDate, null);
+    public static readonly UpdateCheckResult Failed = new(UpdateCheckStatus.Failed, null);
+
+    public static UpdateCheckResult Available(UpdateInfo update) =>
+        new(UpdateCheckStatus.UpdateAvailable, update);
+}
+
 internal static class UpdateChecker
 {
     private const string LatestReleaseApi = "https://api.github.com/repos/R0GGER/NextDNS-DoH/releases/latest";
@@ -39,48 +64,50 @@ internal static class UpdateChecker
     ];
 
     /// <summary>
-    /// Returns the latest release when it is newer than <paramref name="currentVersion"/>.
-    /// Anything unexpected (no network, rate limit, unusable release) returns null.
+    /// Asks GitHub for the release marked as latest and compares it with
+    /// <paramref name="currentVersion"/>. Anything unexpected (no network, rate limit,
+    /// unusable release) reports <see cref="UpdateCheckStatus.Failed"/>.
     /// </summary>
-    public static UpdateInfo? Check(string currentVersion)
+    public static UpdateCheckResult Check(string currentVersion)
     {
         try
         {
             if (!TryParseVersion(currentVersion, out var installed))
             {
-                return null;
+                return UpdateCheckResult.Failed;
             }
 
             var release = FetchLatestRelease();
-            if (release is null || release.Draft || release.Prerelease)
+            if (release is null || !TryParseVersion(release.TagName, out var latest))
             {
-                return null;
+                return UpdateCheckResult.Failed;
             }
 
-            if (!TryParseVersion(release.TagName, out var latest) || latest <= installed)
+            if (release.Draft || release.Prerelease || latest <= installed)
             {
-                return null;
+                return UpdateCheckResult.UpToDate;
             }
 
             var asset = FindInstallerAsset(release.Assets);
             if (asset is null)
             {
-                return null;
+                // A newer release without a usable installer cannot be applied from here.
+                return UpdateCheckResult.Failed;
             }
 
             var page = string.IsNullOrWhiteSpace(release.HtmlUrl) ? ReleasesPage : release.HtmlUrl!;
-            return new UpdateInfo(
+            return UpdateCheckResult.Available(new UpdateInfo(
                 latest,
                 Format(latest),
                 (release.Body ?? "").Replace("\r\n", "\n").Replace("\n", Environment.NewLine).Trim(),
                 asset.DownloadUrl!,
                 page,
-                asset.Size);
+                asset.Size));
         }
         catch
         {
             // An update check must never disturb the app.
-            return null;
+            return UpdateCheckResult.Failed;
         }
     }
 
