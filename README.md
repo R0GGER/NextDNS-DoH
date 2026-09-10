@@ -52,7 +52,9 @@ Two situations still fall back to a UAC prompt per change:
 
 ### Updates
 
-The app asks GitHub for the latest release when it starts and once every 24 hours after that. When a newer version is out, the bottom menu item changes from **NextDNS DoH 1.0.7** to **NextDNS DoH 1.0.7 - update to 1.0.8** and becomes clickable. It opens a window with the release notes and an **Update now** button that downloads the installer and runs it silently; Windows asks for Administrator rights once, and setup replaces the app and starts the new version. Failed checks are ignored, so the menu item simply stays as it was.
+The app asks GitHub for the latest release when it starts and once every 24 hours after that. When a newer version is out, the bottom menu item changes from **NextDNS DoH 1.0.7** to **NextDNS DoH 1.0.7 - update to 1.0.8** and turns bold. Clicking it opens a window with the release notes and an **Update now** button that downloads the installer and runs it silently; Windows asks for Administrator rights once, and setup replaces the app and starts the new version.
+
+You can also search yourself: click that same menu item when it shows only the version number. It checks right away and tells you either that you already have the latest version, or that GitHub could not be reached. The automatic checks stay silent when they fail, so the menu item simply stays as it was.
 
 ## Troubleshooting
 
@@ -83,7 +85,7 @@ Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu
 | File                         | What it is                                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `publish/nextdns-doh.exe`    | Portable app. Run it as-is; no installer.                                                                        |
-| `dist/NextDNS-DoH-1.0.7.exe` | Setup that copies the app to `%ProgramFiles%\NextDNS DoH`, registers the scheduled tasks, adds a Start Menu shortcut, and launches it. |
+| `dist/NextDNS-DoH-1.0.7.exe` | App with intstaller. Install location: `%ProgramFiles%\NextDNS DoH`. |
 
 
 The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.7`).
