@@ -8,13 +8,15 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _nameBox;
     private readonly CheckBox _minimalistBox;
     private readonly CheckBox _badgeBox;
+    private readonly CheckBox _serviceBox;
 
     public string ConfigurationId => _idBox.Text.Trim();
     public string DeviceName => _nameBox.Text.Trim();
     public bool MinimalistIcon => _minimalistBox.Checked;
     public bool ShowStatusBadge => _badgeBox.Checked;
+    public bool RunAsService => _serviceBox.Checked;
 
-    public SettingsForm(string currentId, string currentDeviceName, bool minimalistIcon, bool showStatusBadge)
+    public SettingsForm(string currentId, string currentDeviceName, bool minimalistIcon, bool showStatusBadge, bool runAsService)
     {
         Text = "NextDNS DoH - Settings";
         FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -24,7 +26,7 @@ internal sealed class SettingsForm : Form
         ShowIcon = true;
         Icon = TrayIcons.Create(enabled: true);
         ShowInTaskbar = true;
-        ClientSize = new Size(360, 274);
+        ClientSize = new Size(360, 298);
         Font = new Font("Segoe UI", 9F);
 
         var intro = new LinkLabel
@@ -105,11 +107,19 @@ internal sealed class SettingsForm : Form
             Checked = showStatusBadge
         };
 
+        _serviceBox = new CheckBox
+        {
+            AutoSize = true,
+            Location = new Point(16, 228),
+            Text = "Run as a Windows service",
+            Checked = runAsService
+        };
+
         var save = new Button
         {
             Text = "Save",
             DialogResult = DialogResult.OK,
-            Location = new Point(188, 236),
+            Location = new Point(188, 260),
             Size = new Size(75, 26)
         };
         save.Click += (_, _) =>
@@ -129,7 +139,7 @@ internal sealed class SettingsForm : Form
         {
             Text = "Cancel",
             DialogResult = DialogResult.Cancel,
-            Location = new Point(269, 236),
+            Location = new Point(269, 260),
             Size = new Size(75, 26)
         };
 
@@ -138,7 +148,7 @@ internal sealed class SettingsForm : Form
         Controls.AddRange(new Control[]
         {
             intro, idLabel, _idBox, nameLabel, _nameBox, nameHint,
-            _minimalistBox, _badgeBox, save, cancel
+            _minimalistBox, _badgeBox, _serviceBox, save, cancel
         });
         FormClosed += (_, _) => Icon?.Dispose();
     }

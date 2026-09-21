@@ -129,20 +129,14 @@ internal sealed class TrayApp : ApplicationContext
             settings.ConfigurationId,
             settings.DeviceName,
             settings.MinimalistIcon,
-            settings.ShowStatusBadge);
+            settings.ShowStatusBadge,
+            WindowsService.IsInstalled());
         if (form.ShowDialog() != DialogResult.OK)
         {
             return;
         }
 
-        var id = DnsManager.NormalizeId(form.ConfigurationId);
-        var dnsChanged = !string.Equals(settings.ConfigurationId, id, StringComparison.Ordinal)
-            || !string.Equals(settings.DeviceName, form.DeviceName, StringComparison.Ordinal);
-        settings.ConfigurationId = id;
-        settings.DeviceName = form.DeviceName;
-        settings.MinimalistIcon = form.MinimalistIcon;
-        settings.ShowStatusBadge = form.ShowStatusBadge;
-        settings.Save();
+        var dnsChanged = SaveSettings(form, settings);
         RefreshUi();
 
         if (firstRun)
@@ -175,18 +169,55 @@ internal sealed class TrayApp : ApplicationContext
             settings.ConfigurationId,
             settings.DeviceName,
             settings.MinimalistIcon,
-            settings.ShowStatusBadge);
+            settings.ShowStatusBadge,
+            WindowsService.IsInstalled());
         if (form.ShowDialog() != DialogResult.OK)
         {
             return false;
         }
 
-        settings.ConfigurationId = DnsManager.NormalizeId(form.ConfigurationId);
+        SaveSettings(form, settings);
+        return true;
+    }
+
+    private static bool SaveSettings(SettingsForm form, AppSettings settings)
+    {
+        var id = DnsManager.NormalizeId(form.ConfigurationId);
+        var dnsChanged = !string.Equals(settings.ConfigurationId, id, StringComparison.Ordinal)
+            || !string.Equals(settings.DeviceName, form.DeviceName, StringComparison.Ordinal);
+        settings.ConfigurationId = id;
         settings.DeviceName = form.DeviceName;
         settings.MinimalistIcon = form.MinimalistIcon;
         settings.ShowStatusBadge = form.ShowStatusBadge;
         settings.Save();
-        return true;
+        ApplyServiceChoice(form.RunAsService);
+        return dnsChanged;
+    }
+
+    private static void ApplyServiceChoice(bool enable)
+    {
+        if (enable == WindowsService.IsInstalled() && (!enable || WindowsService.IsRunning()))
+        {
+            return;
+        }
+
+        if (WindowsService.SetEnabled(enable))
+        {
+            return;
+        }
+
+        var error = Elevation.ReadLastError();
+        var message = "The Windows service could not be changed. It was cancelled, or the elevated NextDNS DoH task could not run.";
+        if (!string.IsNullOrWhiteSpace(error))
+        {
+            var lines = error!.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length > 0)
+            {
+                message = lines[0];
+            }
+        }
+
+        MessageBox.Show(message, "NextDNS DoH", MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
     private void OpenDashboard()

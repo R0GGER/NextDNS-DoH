@@ -54,18 +54,18 @@ internal sealed class UpdateForm : Form
             Text = "What's new:"
         };
 
-        var notes = new TextBox
+        var notes = new RichTextBox
         {
             Location = new Point(16, 88),
             Size = new Size(388, 180),
-            Multiline = true,
             ReadOnly = true,
-            ScrollBars = ScrollBars.Vertical,
+            DetectUrls = true,
+            BorderStyle = BorderStyle.FixedSingle,
             BackColor = SystemColors.Window,
-            Text = string.IsNullOrWhiteSpace(update.ReleaseNotes)
-                ? "No release notes."
-                : update.ReleaseNotes
+            ScrollBars = RichTextBoxScrollBars.Vertical,
+            TabStop = false
         };
+        MarkdownNotes.Render(notes, update.ReleaseNotes);
         notes.GotFocus += (_, _) => notes.Select(0, 0);
 
         var link = new LinkLabel
