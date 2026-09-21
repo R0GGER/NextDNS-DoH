@@ -11,8 +11,11 @@ internal static class ElevatedTask
     private const string Folder = "NextDNS DoH";
     private const string OnTaskName = Folder + @"\Apply On";
     private const string OffTaskName = Folder + @"\Apply Off";
+    private const string ServiceOnTaskName = Folder + @"\Service On";
+    private const string ServiceOffTaskName = Folder + @"\Service Off";
 
     private static readonly TimeSpan ApplyTimeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan ServiceTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(150);
 
     public static bool Register(string? userName)
@@ -20,15 +23,19 @@ internal static class ElevatedTask
         var principal = ResolvePrincipal(userName);
         var exe = Application.ExecutablePath;
         return Register(OnTaskName, principal, exe, "--apply on", "Turns NextDNS DNS-over-HTTPS on.")
-            && Register(OffTaskName, principal, exe, "--apply off", "Turns NextDNS DNS-over-HTTPS off.");
+            && Register(OffTaskName, principal, exe, "--apply off", "Turns NextDNS DNS-over-HTTPS off.")
+            && Register(ServiceOnTaskName, principal, exe, "--service on", "Installs the NextDNS DoH Windows service.")
+            && Register(ServiceOffTaskName, principal, exe, "--service off", "Removes the NextDNS DoH Windows service.");
     }
 
     public static bool Unregister()
     {
-        var on = RunSchtasks($"/delete /tn \"{OnTaskName}\" /f") == 0;
-        var off = RunSchtasks($"/delete /tn \"{OffTaskName}\" /f") == 0;
+        var on = DeleteTask(OnTaskName);
+        var off = DeleteTask(OffTaskName);
+        var serviceOn = DeleteTask(ServiceOnTaskName);
+        var serviceOff = DeleteTask(ServiceOffTaskName);
         DeleteFolder();
-        return on && off;
+        return on && off && serviceOn && serviceOff;
     }
 
     /// <summary>
@@ -45,14 +52,14 @@ internal static class ElevatedTask
             return false;
         }
 
-        ClearResult();
+        ClearResult(AppSettings.ApplyResultPath);
         var startedAt = DateTime.UtcNow;
         if (RunSchtasks($"/run /tn \"{taskName}\"") != 0)
         {
             return false;
         }
 
-        var result = WaitForResult(startedAt);
+        var result = WaitForResult(AppSettings.ApplyResultPath, startedAt, ApplyTimeout);
         if (result is null)
         {
             TryWriteError("Changing DNS timed out. The NextDNS DoH scheduled task did not finish.");
@@ -61,6 +68,47 @@ internal static class ElevatedTask
 
         succeeded = result == 0;
         return true;
+    }
+
+    /// <summary>
+    /// schtasks /run cannot pass arguments, so install and remove are separate tasks.
+    /// Returns false when no task is available, so the caller can fall back to a UAC prompt.
+    /// </summary>
+    public static bool TryService(bool enable, out bool succeeded)
+    {
+        succeeded = false;
+        var taskName = enable ? ServiceOnTaskName : ServiceOffTaskName;
+        if (RunSchtasks($"/query /tn \"{taskName}\"") != 0)
+        {
+            return false;
+        }
+
+        ClearResult(AppSettings.ServiceResultPath);
+        var startedAt = DateTime.UtcNow;
+        if (RunSchtasks($"/run /tn \"{taskName}\"") != 0)
+        {
+            return false;
+        }
+
+        var result = WaitForResult(AppSettings.ServiceResultPath, startedAt, ServiceTimeout);
+        if (result is null)
+        {
+            TryWriteError("Changing the Windows service timed out. The NextDNS DoH scheduled task did not finish.");
+            return true;
+        }
+
+        succeeded = result == 0;
+        return true;
+    }
+
+    private static bool DeleteTask(string taskName)
+    {
+        if (RunSchtasks($"/query /tn \"{taskName}\"") != 0)
+        {
+            return true;
+        }
+
+        return RunSchtasks($"/delete /tn \"{taskName}\" /f") == 0;
     }
 
     private static bool Register(string taskName, string principal, string exe, string arguments, string description)
@@ -163,16 +211,16 @@ internal static class ElevatedTask
     /// A file older than <paramref name="startedAt"/> is left over from an earlier apply that
     /// we failed to delete, so it must not be mistaken for this run's result.
     /// </summary>
-    private static int? WaitForResult(DateTime startedAt)
+    private static int? WaitForResult(string path, DateTime startedAt, TimeSpan timeout)
     {
-        var deadline = DateTime.UtcNow + ApplyTimeout;
+        var deadline = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < deadline)
         {
             try
             {
-                if (File.Exists(AppSettings.ApplyResultPath) &&
-                    File.GetLastWriteTimeUtc(AppSettings.ApplyResultPath) >= startedAt &&
-                    int.TryParse(File.ReadAllText(AppSettings.ApplyResultPath).Trim(), out var result))
+                if (File.Exists(path) &&
+                    File.GetLastWriteTimeUtc(path) >= startedAt &&
+                    int.TryParse(File.ReadAllText(path).Trim(), out var result))
                 {
                     return result;
                 }
@@ -200,13 +248,13 @@ internal static class ElevatedTask
         }
     }
 
-    private static void ClearResult()
+    private static void ClearResult(string path)
     {
         try
         {
-            if (File.Exists(AppSettings.ApplyResultPath))
+            if (File.Exists(path))
             {
-                File.Delete(AppSettings.ApplyResultPath);
+                File.Delete(path);
             }
         }
         catch

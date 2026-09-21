@@ -85,7 +85,7 @@ internal static class Elevation
         }
     }
 
-    private static bool RunElevated(string arguments)
+    internal static bool RunElevated(string arguments)
     {
         var exe = Application.ExecutablePath;
         if (string.IsNullOrWhiteSpace(exe))
@@ -141,7 +141,7 @@ internal static class Elevation
         }
     }
 
-    private static void ClearError()
+    internal static void ClearError()
     {
         try
         {
