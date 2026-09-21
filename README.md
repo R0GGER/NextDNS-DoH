@@ -26,9 +26,10 @@ It lives in the notification area. Left-click the icon (or use **NextDNS on/off*
 - Applies the change to active Ethernet and Wi-Fi adapters (not VPN, Bluetooth, or Hyper-V virtual switches)
 - Restores DHCP DNS when you turn it off
 - Can start with Windows
+- Can run as a Windows service, so NextDNS is applied at startup (before sign-in) and again when a network connects
 - Checks GitHub for a newer release and can install it from the tray menu
 - Stores your configuration ID and device name in `%AppData%\nextdns-doh\settings.json`
-- Toggles without a UAC prompt through the **NextDNS DoH\Apply On** and **Apply Off** scheduled tasks that the installer registers
+- Toggles without a UAC prompt through the **NextDNS DoH\Apply On** and **Apply Off** scheduled tasks that the installer registers. **Service On** and **Service Off** do the same for the Windows service
 
 On first run the app asks for your NextDNS configuration ID. That ID is the path segment in `https://dns.nextdns.io/[ID]`.
 
@@ -36,7 +37,7 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 
 ## Download
 
-[NextDNS-DoH-1.0.8.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.8/NextDNS-DoH-1.0.8.exe) — Windows installer. It asks for Administrator rights once and installs to `%ProgramFiles%\NextDNS DoH`. After that, turning NextDNS on or off no longer prompts.
+[NextDNS-DoH-1.0.9.exe](https://github.com/R0GGER/NextDNS-DoH/releases/download/1.0.9/NextDNS-DoH-1.0.9.exe) — Windows installer. It asks for Administrator rights once and installs to `%ProgramFiles%\NextDNS DoH`. After that, turning NextDNS on or off no longer prompts.
 
 ## Install & Run
 
@@ -44,10 +45,11 @@ On first run the app asks for your NextDNS configuration ID. That ID is the path
 2. Enter your NextDNS configuration ID and optionally a device name (defaults to this PC’s name).
 3. Optionally enable NextDNS immediately.
 4. Left-click the tray icon to toggle [on](/screenshots/systray_nextdns_on.png) or [off](/screenshots/systray_nextdns_off.png), or [right-click](/screenshots/config.png) for **Settings**, **Start with Windows**, and **Exit**.
+5. In **Settings**, **Run as a Windows service** keeps NextDNS applied at startup, before you sign in, and again when a network connects. **Start with Windows** still only controls the tray icon.
 
 Two situations still fall back to a UAC prompt per change:
 
-- Running `nextdns-doh.exe` portable, without the installer. There are no scheduled tasks then.
+- Running `nextdns-doh.exe` portable, without the installer. There are no scheduled tasks then, and the Windows service cannot be registered from that copy.
 - Using the app from a second Windows account. The tasks are registered for the account that ran the installer.
 
 ### Updates
@@ -77,7 +79,7 @@ Open `about:config` in Firefox and set both preferences below, then restart Fire
 
 ## Uninstall
 
-Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu folder. Uninstall also removes the “Start with Windows” registry value.
+Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu folder. Uninstall also removes the “Start with Windows” registry value and the Windows service if you turned that on.
 
 ## Build outputs
 
@@ -85,10 +87,10 @@ Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu
 | File                         | What it is                                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `publish/nextdns-doh.exe`    | Portable app. Run it as-is; no installer.                                                                        |
-| `dist/NextDNS-DoH-1.0.8.exe` | App with intstaller. Install location: `%ProgramFiles%\NextDNS DoH`. |
+| `dist/NextDNS-DoH-1.0.9.exe` | App with intstaller. Install location: `%ProgramFiles%\NextDNS DoH`. |
 
 
-The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.8`).
+The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.9`).
 
 ## Prerequisites
 
