@@ -17,17 +17,25 @@ internal sealed class AppSettings
 
     public static string ApplyResultPath => Path.Combine(DirectoryPath, "apply-result.txt");
 
-    public static AppSettings Load()
+    public static string ServiceResultPath => Path.Combine(DirectoryPath, "service-result.txt");
+
+    public static AppSettings Load() => LoadFrom(FilePath);
+
+    /// <summary>
+    /// The Windows service runs as LocalSystem, so it cannot use
+    /// <see cref="FilePath"/> and loads the user file stored at registration.
+    /// </summary>
+    public static AppSettings LoadFrom(string path)
     {
         var settings = new AppSettings();
         try
         {
-            if (!File.Exists(FilePath))
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
                 return settings;
             }
 
-            var json = File.ReadAllText(FilePath);
+            var json = File.ReadAllText(path);
             settings.ConfigurationId = ReadJsonString(json, "ConfigurationId");
             settings.DeviceName = ReadJsonString(json, "DeviceName");
             settings.Enabled = ReadJsonBool(json, "Enabled");
@@ -56,6 +64,18 @@ internal sealed class AppSettings
     }
 
     public bool HasConfigurationId => !string.IsNullOrWhiteSpace(ConfigurationId);
+
+    public static void WriteLastErrorBeside(string settingsFilePath, string message)
+    {
+        var directory = Path.GetDirectoryName(settingsFilePath);
+        if (string.IsNullOrEmpty(directory))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "last-error.txt"), message);
+    }
 
     private static string EscapeJson(string value) =>
         (value ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"");
