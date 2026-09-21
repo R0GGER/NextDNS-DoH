@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-#define MyAppVersion "1.0.8"
+#define MyAppVersion "1.0.9"
 #endif
 
 #define MyAppName "NextDNS DoH"
@@ -74,6 +74,9 @@ begin
     Exit;
   end;
 
+  { Stop the service before the exe is replaced, otherwise the file stays locked
+    and Service Control Manager can start it again mid-upgrade. }
+  Exec(ExpandConstant('{sys}\sc.exe'), 'stop NextDNSDoH', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM {#MyAppExeName} /F', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(300);
   Result := True;
@@ -108,18 +111,35 @@ begin
     Exec(Exe, '', ExpandConstant('{app}'), SW_SHOWNORMAL, ewNoWait, ResultCode);
 end;
 
+{ The service is left registered across an upgrade. Start it again once the new exe is in place. }
+procedure StartServiceIfPresent;
+var
+  ResultCode: Integer;
+begin
+  if not Exec(ExpandConstant('{sys}\sc.exe'), 'query NextDNSDoH', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    Exit;
+  if ResultCode = 0 then
+    Exec(ExpandConstant('{sys}\sc.exe'), 'start NextDNSDoH', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then
     RemovePreviousPerUserInstall
   else if CurStep = ssDone then
+  begin
+    StartServiceIfPresent;
     LaunchApp;
+  end;
 end;
 
 function InitializeUninstall(): Boolean;
 var
   ResultCode: Integer;
 begin
+  Exec(ExpandConstant('{app}\{#MyAppExeName}'), '--service off', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\sc.exe'), 'stop NextDNSDoH', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\sc.exe'), 'delete NextDNSDoH', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM {#MyAppExeName} /F', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(300);
   Result := True;
