@@ -49,6 +49,19 @@ internal static class DnsManager
     {
         foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
         {
+            if (HasNextDnsServer(nic))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasNextDnsServer(NetworkInterface nic)
+    {
+        try
+        {
             foreach (var address in nic.GetIPProperties().DnsAddresses)
             {
                 if (address.ToString() == Ipv4Primary)
@@ -56,6 +69,10 @@ internal static class DnsManager
                     return true;
                 }
             }
+        }
+        catch (NetworkInformationException)
+        {
+            // Adapter vanished while enumerating.
         }
 
         return false;
@@ -100,9 +117,14 @@ internal static class DnsManager
         }
     }
 
+    /// <summary>
+    /// Also resets disconnected adapters: a Wi-Fi adapter that was on when NextDNS
+    /// was enabled keeps its static servers after it disconnects, which would leave
+    /// <see cref="IsEnabled"/> reporting on.
+    /// </summary>
     public static void Disable()
     {
-        var adapters = GetTargetAdapters();
+        var adapters = GetTargetAdapters(includeDisconnected: true);
         TryBuildIpv6(AppSettings.Load().ConfigurationId, out var ipv6Primary, out var ipv6Secondary);
         string[] ipv4 = [Ipv4Primary, Ipv4Secondary];
         string[]? ipv6 = ipv6Primary is null ? null : [ipv6Primary, ipv6Secondary!];
@@ -157,12 +179,15 @@ internal static class DnsManager
     private static bool IsHexDigit(char c) =>
         (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 
-    private static List<AdapterInfo> GetTargetAdapters()
+    private static List<AdapterInfo> GetTargetAdapters(bool includeDisconnected = false)
     {
         var result = new List<AdapterInfo>();
         foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
         {
-            if (!IsTargetAdapter(nic))
+            var target = includeDisconnected
+                ? IsTargetAdapter(nic, requireUp: false) || HasNextDnsServer(nic)
+                : IsTargetAdapter(nic);
+            if (!target)
             {
                 continue;
             }
@@ -178,9 +203,9 @@ internal static class DnsManager
         return result;
     }
 
-    private static bool IsTargetAdapter(NetworkInterface nic)
+    private static bool IsTargetAdapter(NetworkInterface nic, bool requireUp = true)
     {
-        if (nic.OperationalStatus != OperationalStatus.Up)
+        if (requireUp && nic.OperationalStatus != OperationalStatus.Up)
         {
             return false;
         }
