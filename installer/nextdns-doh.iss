@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-#define MyAppVersion "1.0.10"
+#define MyAppVersion "1.0.11"
 #endif
 
 #define MyAppName "NextDNS DoH"
@@ -59,6 +59,9 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "--unregister-task"; RunOnceId: "
 Type: filesandordirs; Name: "{app}"
 
 [Code]
+var
+  RemoveAppData: Boolean;
+
 function InitializeSetup(): Boolean;
 var
   ResultCode: Integer;
@@ -146,7 +149,26 @@ begin
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  AppDataDir: String;
 begin
-  if CurUninstallStep = usPostUninstall then
+  if CurUninstallStep = usUninstall then
+  begin
+    { Asked only after the user confirmed uninstall, and only when the folder
+      exists. A silent uninstall (including the old per-user upgrade path)
+      keeps the folder. }
+    AppDataDir := ExpandConstant('{userappdata}\nextdns-doh');
+    if (not UninstallSilent) and DirExists(AppDataDir) then
+      RemoveAppData := MsgBox(
+        'Also delete your NextDNS DoH settings and logs?' + #13#10 + #13#10 +
+        AppDataDir + #13#10 + #13#10 +
+        'Yes removes that folder, including your configuration ID and device name. No keeps it.',
+        mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES;
+  end
+  else if CurUninstallStep = usPostUninstall then
+  begin
     RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'NextDNS-DoH');
+    if RemoveAppData then
+      DelTree(ExpandConstant('{userappdata}\nextdns-doh'), True, True, True);
+  end;
 end;
