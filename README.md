@@ -80,7 +80,7 @@ Open `about:config` in Firefox and set both preferences below, then restart Fire
 
 ## Uninstall
 
-Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu folder. Uninstall also removes the “Start with Windows” registry value and the Windows service if you turned that on.
+Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu folder. Uninstall also removes the “Start with Windows” registry value and the Windows service if you turned that on. When `%AppData%\nextdns-doh` exists, it asks whether to delete that folder too (your configuration ID, device name, and logs). **No** leaves it in place. A silent uninstall does not ask and does not delete it.
 
 ## Build outputs
 
@@ -88,10 +88,10 @@ Uninstall from **Settings → Apps**, or run the uninstaller from the Start Menu
 | File                         | What it is                                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `publish/nextdns-doh.exe`    | Portable app. Run it as-is; no installer.                                                                        |
-| `dist/NextDNS-DoH-1.0.10.exe` | App with intstaller. Install location: `%ProgramFiles%\NextDNS DoH`. |
+| `dist/NextDNS-DoH-1.0.11.exe` | App with intstaller. Install location: `%ProgramFiles%\NextDNS DoH`. |
 
 
-The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.10`).
+The version in the installer filename comes from `<Version>` in `nextdns-doh.csproj` (currently `1.0.11`).
 
 ## Prerequisites
 
